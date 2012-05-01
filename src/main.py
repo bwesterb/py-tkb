@@ -1,6 +1,7 @@
-import argparse
 import logging
+import argparse
 import threading
+import subprocess
 from pprint import pformat
 
 import sarah.coloredLogging
@@ -9,7 +10,29 @@ import mirte
 import mirte.main
 import mirte.mirteFile
 
-class Listener(object):
+class CmdSsh(object):
+    """ Used by ssh command """
+    def __init__(self, program):
+        self.program = program
+        self.sleep_event = threading.Event()
+        self.c = program.client
+    def run(self):
+        self.c.on_occupation_changed.register(self._on_occupation_changed)
+        self.c.set_msgFilter(None)
+        self.sleep_event.wait()
+    def _on_occupation_changed(self, occ, occVer, old_occ, old_occVer):
+        pcs = []
+        for pc, state in occ.iteritems():
+            if state.startswith('l'):
+                pcs.append(pc)
+        print 'Found %s pcs' % len(pcs)
+        for pc in pcs:
+            print ' %s' % pc
+            subprocess.call(['ssh', pc, 
+                            self.program.args.cmd])
+        self.sleep_event.set()
+
+class CmdListener(object):
     """ Used by listen command """
     def __init__(self, program):
         self.program = program
@@ -109,7 +132,10 @@ class Listener(object):
 
 class Program(object):
     def cmd_listen(self, args):
-        Listener(self).listen()
+        CmdListener(self).listen()
+
+    def cmd_ssh(self, args):
+        CmdSsh(self).run()
 
     def parse_args(self):
         parser = argparse.ArgumentParser()
@@ -122,6 +148,9 @@ class Program(object):
         parser_listen.add_argument('--tags', '-t', type=str, default=['all'],
                                 nargs='?')
         parser_listen.set_defaults(func=self.cmd_listen)
+        parser_ssh = subparsers.add_parser('ssh')
+        parser_ssh.add_argument('cmd', type=str, default='hostname')
+        parser_ssh.set_defaults(func=self.cmd_ssh)
         self.args = parser.parse_args()
         return self.args
 
