@@ -1,0 +1,7 @@
+includes:
+ - joyce
+definitions:
+  tkbClient:
+    implementedBy: tkb.client.TkbClient
+    settings:
+      joyceClient: {type: joyceClient}
