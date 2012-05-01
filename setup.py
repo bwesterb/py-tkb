@@ -26,7 +26,7 @@ setup(name='py-tkb',
       package_dir={'tkb': 'src'},
       package_data={'tkb': find_package_data()},
       install_requires = ['mirte>=0.1.5',
-                          'py-joyce>=0.1.8'],
+                          'py-joyce>=0.1.9'],
       entry_points = {
           'console_scripts': [
               'tkb = tkb.main:main',
